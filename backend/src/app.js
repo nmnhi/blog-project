@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config();
 
@@ -14,5 +15,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({ message: "API is running..." });
 });
+
+// Global Error Handler should bottom of all middleware
+app.use(errorHandler);
 
 export default app;
