@@ -85,8 +85,6 @@ export const updatePost = asyncHandler(async (req, res) => {
   }
 
   // Check ownership
-  console.log("Author", post.author);
-  console.log("User id", req.user._id);
   if (post.author.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You don't have permission to update this post");
   }
