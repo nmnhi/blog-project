@@ -6,13 +6,13 @@ const postSchema = new mongoose.Schema(
       type: String,
       required: [true, "Title is required"],
       trim: true,
-      minLenght: [3, "Title mus be at least 3 characters"],
+      minLength: [3, "Title mus be at least 3 characters"],
     },
 
     content: {
       type: String,
       required: [true, "Content is required"],
-      minLenght: [10, "Content must be at least 10 characters"],
+      minLength: [10, "Content must be at least 10 characters"],
     },
 
     thumbnail: {
