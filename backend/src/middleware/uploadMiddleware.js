@@ -1,0 +1,22 @@
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB cho video
+  },
+  fileFilter: (req, file, cb) => {
+    const isImage = file.mimetype.startsWith("image/");
+    const isVideo = file.mimetype.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      return cb(new Error("Only image or video files are allowed"), false);
+    }
+
+    cb(null, true);
+  },
+});
+
+export default upload;

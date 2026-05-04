@@ -1,9 +1,13 @@
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
+import swaggerUi from "swagger-ui-express";
+import { buildSwaggerSpec } from "./config/swagger.js";
 import errorHandler from "./middleware/errorHandler.js";
-
-dotenv.config();
+import authRoutes from "./routes/authRoutes.js";
+import postRoutes from "./routes/postRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
+import likeRoutes from "./routes/likeRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
@@ -11,10 +15,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.get("/", (req, res) => {
-  res.json({ message: "API is running..." });
+// API docs
+const swaggerSpec = buildSwaggerSpec();
+app.get("/api-docs.json", (req, res) => {
+  res.json(swaggerSpec);
 });
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: true }),
+);
+
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/post", postRoutes);
+app.use("/api/comments", commentRoutes);
+app.use("/api/likes", likeRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Global Error Handler should bottom of all middleware
 app.use(errorHandler);
