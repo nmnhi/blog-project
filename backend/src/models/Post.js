@@ -15,9 +15,25 @@ const postSchema = new mongoose.Schema(
       minLenght: [10, "Content must be at least 10 characters"],
     },
 
-    thumnail: {
+    thumbnail: {
       type: String,
       default: "",
+    },
+
+    media: {
+      type: [
+        {
+          url: { type: String, required: true, trim: true },
+          public_id: { type: String, default: "" },
+          type: {
+            type: String,
+            enum: ["image", "video"],
+            default: "image",
+          },
+          thumbnail: { type: String, default: "" },
+        },
+      ],
+      default: [],
     },
 
     tags: {

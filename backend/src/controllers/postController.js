@@ -1,10 +1,15 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import Post from "../models/Post.js";
+import {
+  deleteMediaFromStorage,
+  deleteMediaListFromStorage,
+  normalizeMediaInput,
+} from "../services/mediaService.js";
 
 // Create Post
 export const createPost = asyncHandler(async (req, res) => {
-  const { title, content, thumnail, tags } = req.body;
+  const { title, content, thumbnail, tags, media } = req.body;
   if (!title || !content) {
     throw new ApiError(400, "Title and content are required");
   }
@@ -12,7 +17,8 @@ export const createPost = asyncHandler(async (req, res) => {
   const post = await Post.create({
     title,
     content,
-    thumnail: thumnail || "",
+    thumbnail: thumbnail ?? "",
+    media: Array.isArray(media) ? media : [],
     tags: tags || [],
     author: req.user._id,
   });
@@ -76,7 +82,7 @@ export const getPostById = asyncHandler(async (req, res) => {
 
 // UPDATE POST (Only author)
 export const updatePost = asyncHandler(async (req, res) => {
-  const { title, content, thumnail, tags } = req.body;
+  const { title, content, thumbnail, tags, media, removedMedia = [] } = req.body;
 
   const post = await Post.findById(req.params.id);
 
@@ -89,10 +95,41 @@ export const updatePost = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You don't have permission to update this post");
   }
 
+  const nextThumbnail = thumbnail;
+  const previousThumbnail = post.thumbnail;
+  const isReplacingThumbnail =
+    typeof nextThumbnail === "string" &&
+    nextThumbnail &&
+    nextThumbnail !== previousThumbnail;
+
   post.title = title || post.title;
   post.content = content || post.content;
-  post.thumnail = thumnail || post.thumnail;
+  post.thumbnail = nextThumbnail ?? post.thumbnail;
+  if (Array.isArray(media)) {
+    post.media = media;
+  }
   post.tags = tags || post.tags;
+
+  await deleteMediaListFromStorage(removedMedia);
+  if (Array.isArray(removedMedia) && removedMedia.length > 0) {
+    const removedPublicIds = new Set(
+      removedMedia
+        .map((item) => normalizeMediaInput(item))
+        .filter(Boolean)
+        .map((item) => item.publicId),
+    );
+
+    if (removedPublicIds.size > 0) {
+      post.media = (post.media || []).filter((item) => {
+        const normalized = normalizeMediaInput(item);
+        return !normalized || !removedPublicIds.has(normalized.publicId);
+      });
+    }
+  }
+
+  if (isReplacingThumbnail && previousThumbnail) {
+    await deleteMediaFromStorage(previousThumbnail);
+  }
 
   const updatedPost = await post.save();
 
@@ -118,6 +155,12 @@ export const deletePost = asyncHandler(async (req, res) => {
   if (post.author.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You don't have permission to delete this post");
   }
+
+  if (post.thumbnail) {
+    await deleteMediaFromStorage(post.thumbnail);
+  }
+  await deleteMediaListFromStorage(post.media);
+  await deleteMediaListFromStorage(req.body?.removedMedia);
 
   await post.deleteOne();
 

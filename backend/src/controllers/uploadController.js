@@ -1,6 +1,7 @@
 import cloudinary from "../config/cloudinary.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { deleteMediaFromStorage } from "../services/mediaService.js";
 
 // Helper: upload bufer into Cloudinary by stream
 const uploadToCloudinary = (buffer, options) => {
@@ -51,7 +52,7 @@ export const uploadVideo = asyncHandler(async (req, res) => {
   });
 
   // Tạo thumbnail preview (frame từ video)
-  const thumbnailUrl = cloudinary.url(result.public_id + ".jpg", {
+  const thumbnailUrl = cloudinary.url(result.public_id, {
     resource_type: "video",
     format: "jpg",
     width: 400,
@@ -75,11 +76,7 @@ export const deleteMedia = asyncHandler(async (req, res) => {
     throw new ApiError(400, "publicId and type are required");
   }
 
-  const resourceType = type === "video" ? "video" : "image";
-
-  await cloudinary.uploader.destroy(publicId, {
-    resource_type: resourceType,
-  });
+  await deleteMediaFromStorage({ publicId, type });
 
   res.json({
     success: true,
